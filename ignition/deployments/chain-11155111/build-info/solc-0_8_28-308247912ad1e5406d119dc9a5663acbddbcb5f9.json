@@ -1,0 +1,39 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_28-308247912ad1e5406d119dc9a5663acbddbcb5f9",
+  "solcVersion": "0.8.28",
+  "solcLongVersion": "0.8.28+commit.7893614a",
+  "userSourceNameMap": {
+    "contracts/Todo.sol": "project/contracts/Todo.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "cancun",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode",
+            "evm.deployedBytecode",
+            "evm.methodIdentifiers",
+            "metadata"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/Todo.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.0;\n\ncontract Todo {\n    struct Task {\n        uint id;\n        string text;\n        bool completed;\n    }\n\n    uint public taskCount = 0;\n    mapping(uint => Task) public tasks;\n\n    event TaskCreated(uint id, string text);\n    event TaskCompleted(uint id, bool completed);\n    event TaskDeleted(uint id);\n\n    // Add new task\n    function createTask(string memory _text) public {\n        taskCount++;\n        tasks[taskCount] = Task(taskCount, _text, false);\n        emit TaskCreated(taskCount, _text);\n    }\n\n    // Toggle complete\n    function completeTask(uint _id) public {\n        Task storage task = tasks[_id];\n        task.completed = !task.completed;\n        emit TaskCompleted(_id, task.completed);\n    }\n\n    // Delete task\n    function deleteTask(uint _id) public {\n        delete tasks[_id];\n        emit TaskDeleted(_id);\n    }\n}\n"
+      }
+    }
+  }
+}
