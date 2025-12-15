@@ -1,23 +1,70 @@
-# Node modules
-/node_modules
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
 
-# Compilation output
-/dist
+# Testing
+coverage/
+.nyc_output
 
-# pnpm deploy output
-/bundle
+# Production builds
+dist/
+build/
+bundle/
 
-# Hardhat Build Artifacts
-/artifacts
+# Hardhat
+artifacts/
+cache/
+types/
+typechain/
+typechain-types/
 
-# Hardhat compilation (v2) support directory
-/cache
-
-# Typechain output
-/types
-
-# Hardhat coverage reports
-/coverage
-
+# Environment variables (CRITICAL - DO NOT COMMIT)
 .env
 .env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+
+# Private keys and secrets (CRITICAL - DO NOT COMMIT)
+*.key
+*.pem
+secrets.json
+config/secrets.json
+
+# Deployment information
+deployments/localhost/
+deployment-addresses.json
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Temporary files
+*.tmp
+.temp/
