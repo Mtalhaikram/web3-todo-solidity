@@ -23,6 +23,9 @@ export default function Home() {
   const [newTask, setNewTask] = useState("");
   const [currentChainId, setCurrentChainId] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [darkMode, setDarkMode] = useState(false);
+  const [filter, setFilter] = useState<'all' | 'completed' | 'pending'>('all');
 
   // Create client
   const publicClient = createPublicClient({
@@ -94,32 +97,36 @@ export default function Home() {
   };
 
   const loadTodos = async () => {
-    const count = await publicClient.readContract({
-      address: CONTRACT_ADDRESS,
-      abi,
-      functionName: "taskCount",
-    });
-
-    let tasks = [];
-    for (let i = 1; i <= Number(count); i++) {
-      const task = await publicClient.readContract({
+    try {
+      const count = await publicClient.readContract({
         address: CONTRACT_ADDRESS,
         abi,
-        functionName: "tasks",
-        args: [i],
+        functionName: "taskCount",
       });
 
-      // task is returned as an array: [id, text, completed]
-      if (task && task[1] && task[1].trim() !== "") {
-        tasks.push({
-          id: task[0],
-          text: task[1],
-          completed: task[2],
+      let tasks = [];
+      for (let i = 1; i <= Number(count); i++) {
+        const task = await publicClient.readContract({
+          address: CONTRACT_ADDRESS,
+          abi,
+          functionName: "tasks",
+          args: [i],
         });
-      }
-    }
 
-    setTodos(tasks);
+        // task is returned as an array: [id, text, completed]
+        if (task && task[1] && task[1].trim() !== "") {
+          tasks.push({
+            id: task[0],
+            text: task[1],
+            completed: task[2],
+          });
+        }
+      }
+
+      setTodos(tasks);
+    } finally {
+      setIsInitialLoading(false);
+    }
   };
 
   const addTodo = async () => {
@@ -246,7 +253,25 @@ export default function Home() {
         setCurrentChainId(chainId);
       });
     }
+
+    // Initialize dark mode from localStorage
+    const savedDarkMode = localStorage.getItem('darkMode') === 'true';
+    setDarkMode(savedDarkMode);
+    if (savedDarkMode) {
+      document.documentElement.classList.add('dark');
+    }
   }, []);
+
+  // Update dark mode
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('darkMode', 'true');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('darkMode', 'false');
+    }
+  }, [darkMode]);
 
   const getNetworkName = (chainId: string) => {
     const id = parseInt(chainId, 16);
@@ -265,7 +290,24 @@ export default function Home() {
   return (
     <div className="container">
       {/* Header Section */}
-      <div style={{ textAlign: 'center', marginBottom: 'var(--spacing-2xl)' }}>
+      <div style={{ position: 'relative', textAlign: 'center', marginBottom: 'var(--spacing-2xl)' }}>
+        {/* Dark Mode Toggle */}
+        <button
+          onClick={() => setDarkMode(!darkMode)}
+          className="btn-outline"
+          style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            padding: 'var(--spacing-sm)',
+            minWidth: 'auto',
+            fontSize: '1.25rem'
+          }}
+          aria-label="Toggle dark mode"
+        >
+          {darkMode ? '☀️' : '🌙'}
+        </button>
+
         <h1>Web3 Todo App</h1>
         <p style={{
           color: 'var(--text-secondary)',
@@ -401,13 +443,100 @@ export default function Home() {
       <div className="glass-card" style={{ padding: 'var(--spacing-xl)' }}>
         <h2 style={{
           fontSize: '1.25rem',
-          marginBottom: 'var(--spacing-lg)',
+          marginBottom: 'var(--spacing-md)',
           textAlign: 'center'
         }}>
           📋 Your Tasks
         </h2>
 
-        {todos.length === 0 ? (
+        {/* Filter Buttons */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          gap: 'var(--spacing-sm)',
+          marginBottom: 'var(--spacing-lg)'
+        }}>
+          <button
+            onClick={() => setFilter('all')}
+            className={filter === 'all' ? 'btn-primary' : 'btn-outline'}
+            style={{ fontSize: '0.85rem', padding: 'var(--spacing-xs) var(--spacing-md)' }}
+          >
+            All
+          </button>
+          <button
+            onClick={() => setFilter('completed')}
+            className={filter === 'completed' ? 'btn-success' : 'btn-outline'}
+            style={{ fontSize: '0.85rem', padding: 'var(--spacing-xs) var(--spacing-md)' }}
+          >
+            Completed
+          </button>
+          <button
+            onClick={() => setFilter('pending')}
+            className={filter === 'pending' ? 'btn-outline' : 'btn-outline'}
+            style={{ fontSize: '0.85rem', padding: 'var(--spacing-xs) var(--spacing-md)' }}
+          >
+            Pending
+          </button>
+        </div>
+
+        {isInitialLoading ? (
+          /* Loading Skeletons */
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 'var(--spacing-md)'
+          }}>
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="card"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 'var(--spacing-md)',
+                  padding: 'var(--spacing-md)',
+                  animation: 'pulse 1.5s ease-in-out infinite'
+                }}
+              >
+                <div style={{
+                  width: '1.5rem',
+                  height: '1.5rem',
+                  borderRadius: '50%',
+                  background: 'var(--border)',
+                }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{
+                    height: '1rem',
+                    width: '70%',
+                    background: 'var(--border)',
+                    borderRadius: 'var(--radius-sm)',
+                    marginBottom: 'var(--spacing-xs)'
+                  }} />
+                  <div style={{
+                    height: '0.75rem',
+                    width: '30%',
+                    background: 'var(--border)',
+                    borderRadius: 'var(--radius-sm)'
+                  }} />
+                </div>
+                <div style={{ display: 'flex', gap: 'var(--spacing-sm)' }}>
+                  <div style={{
+                    width: '80px',
+                    height: '32px',
+                    background: 'var(--border)',
+                    borderRadius: 'var(--radius-md)'
+                  }} />
+                  <div style={{
+                    width: '80px',
+                    height: '32px',
+                    background: 'var(--border)',
+                    borderRadius: 'var(--radius-md)'
+                  }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : todos.length === 0 ? (
           <div style={{
             textAlign: 'center',
             padding: 'var(--spacing-2xl)',
@@ -416,83 +545,100 @@ export default function Home() {
             <p style={{ fontSize: '3rem', marginBottom: 'var(--spacing-md)' }}>📝</p>
             <p>No tasks yet. Add your first task above!</p>
           </div>
-        ) : (
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 'var(--spacing-md)'
-          }}>
-            {todos.map((t, index) => (
-              <div
-                key={t.id}
-                className="card fade-in"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 'var(--spacing-md)',
-                  padding: 'var(--spacing-md)',
-                  animationDelay: `${index * 50}ms`
-                }}
-              >
-                <div style={{
-                  flex: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 'var(--spacing-md)'
-                }}>
-                  <span style={{
-                    fontSize: '1.5rem',
-                    opacity: t.completed ? '0.5' : '1'
+        ) : (() => {
+          const filteredTodos = todos.filter(t => {
+            if (filter === 'completed') return t.completed;
+            if (filter === 'pending') return !t.completed;
+            return true;
+          });
+
+          return filteredTodos.length === 0 ? (
+            <div style={{
+              textAlign: 'center',
+              padding: 'var(--spacing-2xl)',
+              color: 'var(--text-tertiary)'
+            }}>
+              <p style={{ fontSize: '2rem', marginBottom: 'var(--spacing-md)' }}>🔍</p>
+              <p>No {filter} tasks found.</p>
+            </div>
+          ) : (
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 'var(--spacing-md)'
+            }}>
+              {filteredTodos.map((t, index) => (
+                <div
+                  key={t.id}
+                  className="card fade-in"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 'var(--spacing-md)',
+                    padding: 'var(--spacing-md)',
+                    animationDelay: `${index * 50}ms`
+                  }}
+                >
+                  <div style={{
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 'var(--spacing-md)'
                   }}>
-                    {t.completed ? "✅" : "⭕"}
-                  </span>
-                  <div style={{ flex: 1 }}>
-                    <p style={{
-                      fontSize: '1rem',
-                      fontWeight: '500',
-                      textDecoration: t.completed ? 'line-through' : 'none',
-                      opacity: t.completed ? '0.6' : '1',
-                      color: 'var(--text-primary)'
+                    <span style={{
+                      fontSize: '1.5rem',
+                      opacity: t.completed ? '0.5' : '1'
                     }}>
-                      {t.text}
-                    </p>
-                    <p style={{
-                      fontSize: '0.75rem',
-                      color: 'var(--text-tertiary)',
-                      marginTop: 'var(--spacing-xs)'
-                    }}>
-                      Task #{t.id.toString()}
-                    </p>
+                      {t.completed ? "✅" : "⭕"}
+                    </span>
+                    <div style={{ flex: 1 }}>
+                      <p style={{
+                        fontSize: '1rem',
+                        fontWeight: '500',
+                        textDecoration: t.completed ? 'line-through' : 'none',
+                        opacity: t.completed ? '0.6' : '1',
+                        color: 'var(--text-primary)'
+                      }}>
+                        {t.text}
+                      </p>
+                      <p style={{
+                        fontSize: '0.75rem',
+                        color: 'var(--text-tertiary)',
+                        marginTop: 'var(--spacing-xs)'
+                      }}>
+                        Task #{t.id.toString()}
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <div style={{
-                  display: 'flex',
-                  gap: 'var(--spacing-sm)',
-                  flexShrink: 0
-                }}>
-                  {!t.completed && (
+                  <div style={{
+                    display: 'flex',
+                    gap: 'var(--spacing-sm)',
+                    flexShrink: 0
+                  }}>
+                    {!t.completed && (
+                      <button
+                        onClick={() => completeTask(t.id)}
+                        disabled={isLoading}
+                        className="btn-success"
+                        style={{ fontSize: '0.8rem' }}
+                      >
+                        ✓ Complete
+                      </button>
+                    )}
                     <button
-                      onClick={() => completeTask(t.id)}
+                      onClick={() => deleteTask(t.id)}
                       disabled={isLoading}
-                      className="btn-success"
+                      className="btn-danger"
                       style={{ fontSize: '0.8rem' }}
                     >
-                      ✓ Complete
+                      🗑 Delete
                     </button>
-                  )}
-                  <button
-                    onClick={() => deleteTask(t.id)}
-                    disabled={isLoading}
-                    className="btn-danger"
-                    style={{ fontSize: '0.8rem' }}
-                  >
-                    🗑 Delete
-                  </button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          );
+        })()}
 
         {todos.length > 0 && (
           <div style={{
