@@ -11,9 +11,15 @@ import {
 import { sepolia } from "viem/chains";
 import { CONTRACT_ADDRESS } from "../lib/contract";
 
+interface Todo {
+  id: bigint;
+  text: string;
+  completed: boolean;
+}
+
 export default function Home() {
   const [account, setAccount] = useState("");
-  const [todos, setTodos] = useState([]);
+  const [todos, setTodos] = useState<Todo[]>([]);
   const [newTask, setNewTask] = useState("");
   const [currentChainId, setCurrentChainId] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -32,7 +38,7 @@ export default function Home() {
     });
 
     setAccount(accounts[0]);
-    
+
     // Check and switch to Sepolia if needed
     await switchToSepolia();
   };
@@ -140,13 +146,13 @@ export default function Home() {
       });
 
       console.log("Transaction sent:", hash);
-      
+
       // Wait for transaction to be mined
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
       console.log("Transaction confirmed:", receipt);
 
       setNewTask("");
-      
+
       // Reload todos after transaction is confirmed
       await loadTodos();
     } catch (error) {
@@ -178,7 +184,7 @@ export default function Home() {
       });
 
       console.log("Transaction sent:", hash);
-      
+
       // Wait for transaction to be mined
       await publicClient.waitForTransactionReceipt({ hash });
       console.log("Task completed");
@@ -214,7 +220,7 @@ export default function Home() {
       });
 
       console.log("Transaction sent:", hash);
-      
+
       // Wait for transaction to be mined
       await publicClient.waitForTransactionReceipt({ hash });
       console.log("Task deleted");
@@ -231,11 +237,11 @@ export default function Home() {
 
   useEffect(() => {
     loadTodos();
-    
+
     // Listen for chain changes
     if (window.ethereum) {
       window.ethereum.request({ method: "eth_chainId" }).then(setCurrentChainId);
-      
+
       window.ethereum.on("chainChanged", (chainId: string) => {
         setCurrentChainId(chainId);
       });
@@ -257,61 +263,266 @@ export default function Home() {
   };
 
   return (
-    <div style={{ padding: 40 }}>
-      <h1>Web3 Todo — Sepolia</h1>
-
-      {currentChainId && (
-        <p style={{ 
-          color: parseInt(currentChainId, 16) === 11155111 ? "green" : "orange",
-          fontWeight: "bold" 
+    <div className="container">
+      {/* Header Section */}
+      <div style={{ textAlign: 'center', marginBottom: 'var(--spacing-2xl)' }}>
+        <h1>Web3 Todo App</h1>
+        <p style={{
+          color: 'var(--text-secondary)',
+          fontSize: '0.95rem',
+          marginTop: 'var(--spacing-xs)'
         }}>
-          Network: {getNetworkName(currentChainId)}
+          Decentralized task management on Sepolia testnet
         </p>
-      )}
-
-      {!account ? (
-        <button onClick={connectWallet}>Connect Wallet</button>
-      ) : (
-        <p>Connected: {account}</p>
-      )}
-
-      <div style={{ marginTop: 20 }}>
-        <input
-          value={newTask}
-          onChange={(e) => setNewTask(e.target.value)}
-          placeholder="Enter new task"
-          disabled={isLoading}
-        />
-        <button onClick={addTodo} disabled={isLoading}>
-          {isLoading ? "Processing..." : "Add"}
-        </button>
       </div>
 
-      {isLoading && (
-        <p style={{ color: "blue", marginTop: 10 }}>
-          ⏳ Transaction in progress... Please wait for confirmation.
-        </p>
+      {/* Network Status Badge */}
+      {currentChainId && (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          marginBottom: 'var(--spacing-lg)'
+        }}>
+          <span className={
+            parseInt(currentChainId, 16) === 11155111
+              ? "badge badge-success"
+              : "badge badge-warning"
+          }>
+            {parseInt(currentChainId, 16) === 11155111 ? "✓" : "⚠"} {getNetworkName(currentChainId)}
+          </span>
+        </div>
       )}
 
-      <h2 style={{ marginTop: 20 }}>Tasks</h2>
-
-      {todos.map((t) => (
-        <div key={t.id} style={{ marginTop: 10 }}>
-          <b>{t.text}</b> — {t.completed ? "✔ Done" : "❌ Pending"}
-          {!t.completed && (
-            <button onClick={() => completeTask(t.id)} disabled={isLoading}>
-              Complete
+      {/* Wallet Connection Card */}
+      <div className="glass-card" style={{
+        marginBottom: 'var(--spacing-xl)',
+        padding: 'var(--spacing-xl)',
+        textAlign: 'center'
+      }}>
+        {!account ? (
+          <div>
+            <p style={{
+              color: 'var(--text-secondary)',
+              marginBottom: 'var(--spacing-md)',
+              fontSize: '0.9rem'
+            }}>
+              Connect your wallet to get started
+            </p>
+            <button onClick={connectWallet} className="btn-primary">
+              🔗 Connect Wallet
             </button>
-          )}
-          <button 
-            onClick={() => deleteTask(t.id)} 
-            style={{ marginLeft: 10 }}
+          </div>
+        ) : (
+          <div>
+            <p style={{
+              fontSize: '0.85rem',
+              color: 'var(--text-tertiary)',
+              marginBottom: 'var(--spacing-xs)'
+            }}>
+              Connected Address
+            </p>
+            <p style={{
+              fontFamily: 'monospace',
+              fontSize: '0.9rem',
+              color: 'var(--text-primary)',
+              fontWeight: '500'
+            }}>
+              {account.slice(0, 6)}...{account.slice(-4)}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Add Task Card */}
+      <div className="glass-card" style={{
+        marginBottom: 'var(--spacing-xl)',
+        padding: 'var(--spacing-xl)'
+      }}>
+        <h2 style={{
+          fontSize: '1.25rem',
+          marginBottom: 'var(--spacing-md)',
+          textAlign: 'center'
+        }}>
+          ➕ Add New Task
+        </h2>
+        <div style={{
+          display: 'flex',
+          gap: 'var(--spacing-md)',
+          alignItems: 'stretch'
+        }}>
+          <input
+            type="text"
+            value={newTask}
+            onChange={(e) => setNewTask(e.target.value)}
+            placeholder="What needs to be done?"
             disabled={isLoading}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !isLoading && newTask) {
+                addTodo();
+              }
+            }}
+            style={{ flex: 1 }}
+          />
+          <button
+            onClick={addTodo}
+            disabled={isLoading || !newTask}
+            className="btn-primary"
+            style={{ minWidth: '100px' }}
           >
-            Delete
+            {isLoading ? "⏳" : "Add"}
           </button>
         </div>
-      ))}
+      </div>
+
+      {/* Loading Indicator */}
+      {isLoading && (
+        <div className="glass-card fade-in" style={{
+          marginBottom: 'var(--spacing-xl)',
+          padding: 'var(--spacing-md)',
+          textAlign: 'center',
+          background: 'rgba(99, 102, 241, 0.1)',
+          borderColor: 'var(--primary)'
+        }}>
+          <p style={{
+            color: 'var(--primary)',
+            fontSize: '0.9rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 'var(--spacing-sm)'
+          }}>
+            <span className="loading">⏳</span>
+            Transaction in progress... Please wait for confirmation.
+          </p>
+        </div>
+      )}
+
+      {/* Tasks Section */}
+      <div className="glass-card" style={{ padding: 'var(--spacing-xl)' }}>
+        <h2 style={{
+          fontSize: '1.25rem',
+          marginBottom: 'var(--spacing-lg)',
+          textAlign: 'center'
+        }}>
+          📋 Your Tasks
+        </h2>
+
+        {todos.length === 0 ? (
+          <div style={{
+            textAlign: 'center',
+            padding: 'var(--spacing-2xl)',
+            color: 'var(--text-tertiary)'
+          }}>
+            <p style={{ fontSize: '3rem', marginBottom: 'var(--spacing-md)' }}>📝</p>
+            <p>No tasks yet. Add your first task above!</p>
+          </div>
+        ) : (
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 'var(--spacing-md)'
+          }}>
+            {todos.map((t, index) => (
+              <div
+                key={t.id}
+                className="card fade-in"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 'var(--spacing-md)',
+                  padding: 'var(--spacing-md)',
+                  animationDelay: `${index * 50}ms`
+                }}
+              >
+                <div style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 'var(--spacing-md)'
+                }}>
+                  <span style={{
+                    fontSize: '1.5rem',
+                    opacity: t.completed ? '0.5' : '1'
+                  }}>
+                    {t.completed ? "✅" : "⭕"}
+                  </span>
+                  <div style={{ flex: 1 }}>
+                    <p style={{
+                      fontSize: '1rem',
+                      fontWeight: '500',
+                      textDecoration: t.completed ? 'line-through' : 'none',
+                      opacity: t.completed ? '0.6' : '1',
+                      color: 'var(--text-primary)'
+                    }}>
+                      {t.text}
+                    </p>
+                    <p style={{
+                      fontSize: '0.75rem',
+                      color: 'var(--text-tertiary)',
+                      marginTop: 'var(--spacing-xs)'
+                    }}>
+                      Task #{t.id.toString()}
+                    </p>
+                  </div>
+                </div>
+                <div style={{
+                  display: 'flex',
+                  gap: 'var(--spacing-sm)',
+                  flexShrink: 0
+                }}>
+                  {!t.completed && (
+                    <button
+                      onClick={() => completeTask(t.id)}
+                      disabled={isLoading}
+                      className="btn-success"
+                      style={{ fontSize: '0.8rem' }}
+                    >
+                      ✓ Complete
+                    </button>
+                  )}
+                  <button
+                    onClick={() => deleteTask(t.id)}
+                    disabled={isLoading}
+                    className="btn-danger"
+                    style={{ fontSize: '0.8rem' }}
+                  >
+                    🗑 Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {todos.length > 0 && (
+          <div style={{
+            marginTop: 'var(--spacing-lg)',
+            paddingTop: 'var(--spacing-lg)',
+            borderTop: '1px solid var(--border)',
+            display: 'flex',
+            justifyContent: 'center',
+            gap: 'var(--spacing-lg)',
+            fontSize: '0.85rem',
+            color: 'var(--text-secondary)'
+          }}>
+            <span>Total: {todos.length}</span>
+            <span>•</span>
+            <span>Completed: {todos.filter(t => t.completed).length}</span>
+            <span>•</span>
+            <span>Pending: {todos.filter(t => !t.completed).length}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div style={{
+        textAlign: 'center',
+        marginTop: 'var(--spacing-2xl)',
+        color: 'var(--text-tertiary)',
+        fontSize: '0.85rem'
+      }}>
+        <p>Built with ❤️ on Ethereum Sepolia</p>
+      </div>
     </div>
   );
 }

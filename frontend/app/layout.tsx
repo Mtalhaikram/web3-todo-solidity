@@ -37,6 +37,7 @@
 'use client';
 
 import '@rainbow-me/rainbowkit/styles.css';
+import './globals.css';
 import { WagmiProvider } from 'wagmi';
 import { RainbowKitProvider, ConnectButton } from '@rainbow-me/rainbowkit';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -52,7 +53,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <WagmiProvider config={config}>
           <QueryClientProvider client={queryClient}>
             <RainbowKitProvider>
-              <ConnectButton />
+              <div style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                padding: '1rem 2rem',
+                position: 'sticky',
+                top: 0,
+                background: 'rgba(255, 255, 255, 0.8)',
+                backdropFilter: 'blur(10px)',
+                borderBottom: '1px solid var(--border)',
+                zIndex: 100
+              }}>
+                <ConnectButton />
+              </div>
               {children}
             </RainbowKitProvider>
           </QueryClientProvider>
