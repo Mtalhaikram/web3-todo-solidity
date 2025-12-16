@@ -111,7 +111,7 @@ export default function Home() {
           abi,
           functionName: "tasks",
           args: [i],
-        });
+        }) as [bigint, string, boolean];
 
         // task is returned as an array: [id, text, completed]
         if (task && task[1] && task[1].trim() !== "") {
@@ -170,7 +170,7 @@ export default function Home() {
     }
   };
 
-  const completeTask = async (id) => {
+  const completeTask = async (id: bigint) => {
     if (!account) return alert("Please connect wallet first");
 
     setIsLoading(true);
@@ -206,7 +206,7 @@ export default function Home() {
     }
   };
 
-  const deleteTask = async (id) => {
+  const deleteTask = async (id: bigint) => {
     if (!account) return alert("Please connect wallet first");
 
     setIsLoading(true);
