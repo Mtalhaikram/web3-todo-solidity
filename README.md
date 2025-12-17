@@ -2,7 +2,7 @@
 
 A decentralized todo application built on Ethereum's Sepolia testnet using Next.js, Hardhat, and Solidity.
 
-### 🌐 [Live Demo](https://web3-todoo-solidity.vercel.app/)
+### 🌐 [Live Demo](https://web3-todo-solidity.vercel.app/)
 
 ## 🌟 Features
 
